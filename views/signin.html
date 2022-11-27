@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>signup</title>
+</head>
+
+<body>
+    <form method="post" id="form">
+        <input type="email" placeholder="Enter email" required id="mail">
+        <input type="password" placeholder="Enter password" required id="password">
+        <button type="submit">Submit</button>
+    </form>
+    <div id="statusCode"></div>
+</body>
+<script>
+    const Form = document.getElementById('form');
+    const mail = document.getElementById('mail');
+    const pass = document.getElementById('password');
+    const Status = document.getElementById('statusCode');
+
+    Form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const res = await fetch('/signin', {
+            method: 'post',
+            body: JSON.stringify({ mail: mail.value, pass: pass.value }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        Status.innerHTML = JSON.stringify(data);
+    })
+</script>
+
+</html>
