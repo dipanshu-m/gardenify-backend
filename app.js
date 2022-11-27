@@ -18,6 +18,9 @@ app.use(json());
 var PORT = process.env.PORT || 3399;
 console.log(PORT);
 
-app.get('/', (req, res)=> {
-    res.send('hehe');
-})
+app.listen(PORT, () => {
+  console.log('App listening at port', PORT);
+});
+app.get('/', (req, res) => {
+  res.send('hehe');
+});
