@@ -1,7 +1,5 @@
 // Import the functions you need from the SDKs you need
 const { initializeApp } = require('firebase/app');
-const firebase = require('firebase/app');
-require('firebase/firestore');
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 const {
@@ -61,13 +59,8 @@ const db = getFirestore(app);
 function calculateDateRightNow() {
   // Compute date and split into DD, MM, YYYY
   const d = new Date();
-  const month = d.getMonth() + 1; // +1 because JS returns 0-indexed, and firebase returns 1-indexed
-  const year = d.getFullYear();
-  const day = d.getDate();
   // Format the date data to be parsed by fb and return
-  const dateFormatted = Timestamp.fromDate(
-    new Date(`${month} ${day}, ${year}`)
-  );
+  const dateFormatted = Timestamp.fromDate(new Date(d));
   return dateFormatted;
 }
 
@@ -196,6 +189,24 @@ module.exports.updatePlant = async function (userID, plantID) {
   }
 };
 
+module.exports.increasePoints = async function (userID, point) {
+  try {
+    const docRef = doc(db, USERS_COL, userID);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      // convert points to number
+      const pointNumber = Number(point);
+      const updatedPoints = Number(pointNumber + docSnap.data().points);
+      await updateDoc(docRef, { points: updatedPoints });
+      return { data: { id: userID }, success: true };
+    } else {
+      throw { data: 'no-such-user', success: false };
+    }
+  } catch (error) {
+    return error;
+  }
+};
+
 // COLLECTIONS: PLANTS
 
 // Get Plant Details by ID
@@ -235,7 +246,7 @@ module.exports.createNewPlant = async function (
     // Adding the hash and the lat/lng to the document to use the hash
     // for queries and the lat/lng for distance comparisons.
     const docData = {
-      curentStatus: 'good',
+      curentStatus: 0,
       isDiseased: false,
       ownerID: ownerID,
       name: plantName,
@@ -253,6 +264,58 @@ module.exports.createNewPlant = async function (
   }
 };
 
+// update plant status
+module.exports.updatePlantCurrentStatus = async (plantID, status) => {
+  try {
+    const docRef = doc(db, PLANTS_COL, plantID);
+    const docSnap = await getDoc(docRef);
+    status = Number(status);
+    const date = calculateDateRightNow();
+    if (docSnap.exists()) {
+      await updateDoc(docRef, { curentStatus: status, lastUpdated: date });
+      return { data: { id: plantID }, success: true };
+    } else {
+      throw { data: 'no-such-plant', success: false };
+    }
+  } catch (error) {
+    return error;
+  }
+};
+
+// update plant image
+module.exports.updatePlantImage = async (plantID, imageLink) => {
+  try {
+    const docRef = doc(db, PLANTS_COL, plantID);
+    const docSnap = await getDoc(docRef);
+    const date = calculateDateRightNow();
+    if (docSnap.exists()) {
+      await updateDoc(docRef, { image: imageLink, lastUpdated: date });
+      return { data: { id: plantID }, success: true };
+    } else {
+      throw { data: 'no-such-plant', success: false };
+    }
+  } catch (error) {
+    return error;
+  }
+};
+
+// update plant disease
+module.exports.updatePlantIDisease = async (plantID, isDiseased) => {
+  try {
+    const docRef = doc(db, PLANTS_COL, plantID);
+    const docSnap = await getDoc(docRef);
+    isDiseased = Boolean(isDiseased);
+    const date = calculateDateRightNow();
+    if (docSnap.exists()) {
+      await updateDoc(docRef, { isDiseased: isDiseased, lastUpdated: date });
+      return { data: { id: plantID }, success: true };
+    } else {
+      throw { data: 'no-such-plant', success: false };
+    }
+  } catch (error) {
+    return error;
+  }
+};
 // ---------
 // Get Nearby Plants:
 module.exports.getNearbyPlants = async (lat, lng, dist = 1) => {
