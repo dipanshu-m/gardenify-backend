@@ -16,7 +16,13 @@ const {
   signIn,
   createNewUser,
   getPlant,
+  getUserDetails,
+  getNearbyPlants,
+  createNewPlant,
+  updatePlant,
+  getPlantDetails,
 } = require('./models/firebase');
+const { isNumberObject } = require('util/types');
 
 // dotenv
 require('dotenv').config();
@@ -33,9 +39,10 @@ app.listen(PORT, () => {
 
 // --------MIDDLEWARES----------------
 
-// Body-parser middleware
-app.use(urlencoded({ extended: false }));
+// for parsing application/json
 app.use(json());
+// // for parsing application/x-www-form-urlencoded
+app.use(urlencoded({ extended: false }));
 
 // create statics middlewares
 app.use(express.static('./views'));
@@ -44,13 +51,16 @@ app.use(express.static('./views'));
 // signUp
 app.post('/signup', (req, res) => {
   const { name, mail, pass, latitude, longitude } = req.body;
+
+  const lat = Number(latitude);
+  const lng = Number(longitude);
   if (
-    latitude == null ||
-    longitude == null ||
-    latitude > 90 ||
-    longitude > 180 ||
-    latitude < -90 ||
-    longitude < -180
+    lat == null ||
+    lng == null ||
+    lat > 90 ||
+    lng > 180 ||
+    lat < -90 ||
+    lng < -180
   ) {
     res.json({ data: 'invalid-coordinates', success: false });
   } else {
@@ -64,7 +74,7 @@ app.post('/signup', (req, res) => {
         }
       })
       .then(async () => {
-        createNewUser(uid, latitude, longitude, name)
+        createNewUser(uid, lat, lng, name)
           .then((data) => {
             res.json(data);
           })
@@ -98,11 +108,65 @@ app.post('/signin', (req, res) => {
     });
 });
 
-// get plant
-app.get('/plant', async (req, res) => {
-  const data = await getPlant();
+// USER
+// get user details
+app.get('/user/:id', async (req, res) => {
+  const userID = req.params.id;
+  const data = await getUserDetails(userID);
   res.json(data);
 });
-app.get('*', (req, res) => {
-  res.json({ data: '404' });
+
+// PLANT
+// get plant details
+app.get('/plant/:id', async (req, res) => {
+  const plantID = req.params.id;
+  const data = await getPlantDetails(plantID);
+  res.json(data);
+});
+
+// update plant status
+app.put('/plant/update/status/:id', async (req, res) => {
+  const plantID = req.params.id;
+  const data = await updatePlantStatus(plantID);
+  res.json(data);
+});
+
+// add a new plant
+app.post('/plant', async (req, res) => {
+  const { ownerID, latitude, longitude, image, name } = req.body;
+
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  if (
+    lat == null ||
+    lng == null ||
+    lat > 90 ||
+    lng > 180 ||
+    lat < -90 ||
+    lng < -180
+  ) {
+    res.json({ data: 'invalid-coordinates', success: false });
+  } else {
+    createNewPlant(ownerID, lat, lng, image, name)
+      .then(async (data) => {
+        if (data.data.id) {
+          const d = await updatePlant(ownerID, data.data.id);
+          res.json(d);
+        } else {
+          throw data;
+        }
+      })
+      .catch((err) => {
+        res.json(err);
+      });
+  }
+});
+
+// get plant geolocation vals
+app.get('/plants/latitude=:lat&longitude=:long', async (req, res) => {
+  const lat = Number(req.params.lat);
+  const lng = Number(req.params.long);
+  //   const data = await getUserDetails(userID);
+  const data = await getNearbyPlants(lat, lng);
+  res.json(data);
 });

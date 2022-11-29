@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 const { initializeApp } = require('firebase/app');
-
+const firebase = require('firebase/app');
+require('firebase/firestore');
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 const {
@@ -16,11 +17,21 @@ const {
   updateDoc,
   Timestamp,
   getDoc,
-  // get,
+  collection,
+  orderBy,
+  startAt,
+  endAt,
+  query,
+  getDocs,
+  addDoc,
 } = require('firebase/firestore');
 
 // to geohash for queries
-const { geohashForLocation } = require('geofire-common');
+const {
+  geohashForLocation,
+  geohashQueryBounds,
+  distanceBetween,
+} = require('geofire-common');
 
 // variables(stores static values to prevent issues if renamed)
 const { USERS_COL, PLANTS_COL } = require('./vars');
@@ -112,23 +123,40 @@ module.exports.getPlant = async function (userID = null) {
     console.log(error);
   }
 };
+module.exports.getUserDetails = async function (userID = null) {
+  try {
+    if (userID == null) {
+      throw { data: 'empty', success: false };
+    } else {
+      const docRef = doc(db, USERS_COL, userID);
+      const docSnap = await getDoc(docRef);
+      const data = docSnap.data();
+      if (data) return { data: docSnap.data(), success: true };
+      else {
+        throw 'no-user-found';
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return { data: error, success: false };
+  }
+};
 
 // create
 module.exports.createNewUser = async function (
   userID,
-  latitude = 89.5074,
-  longitude = 90.5074,
+  lat,
+  lng,
   name = 'User'
 ) {
   try {
     // compute date
     const date = calculateDateRightNow();
-
     // creating a new geopoint to set it to latitudes, and longitudes
     // Compute the GeoHash for a lat/lng point
-    const lng = Number(longitude);
-    const lat = Number(latitude);
-    const hash = geohashForLocation([lat, lng]);
+    const latitude = Number(lat);
+    const longitude = Number(lng);
+    const hash = geohashForLocation([latitude, longitude]);
 
     // Adding the hash and the lat/lng to the document to use the hash
     // for queries and the lat/lng for distance comparisons.
@@ -137,8 +165,8 @@ module.exports.createNewUser = async function (
       name: name,
       accountCreationDate: date,
       geohash: hash,
-      lat: lat,
-      lng: lng,
+      latitude: latitude,
+      longitude: longitude,
       points: 0,
       plants: [],
     };
@@ -150,58 +178,132 @@ module.exports.createNewUser = async function (
   }
 };
 
-// // update-plants list
-// module.exports.updatePlant = async function (userID) {
-//   try {
-//     const cityRef = db.collection(USERS_COL).doc(userID);
-
-//     // Set the 'capital' field of the city
-//     const res = await cityRef.update({ capital: true });
-//   } catch (error) {
-//     return error;
-//   }
-// };
+// update plants field
+module.exports.updatePlant = async function (userID, plantID) {
+  try {
+    const docRef = doc(db, USERS_COL, userID);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      var updatedList = [...docSnap.data().plants, plantID];
+      console.log(updatedList);
+      await updateDoc(docRef, { plants: updatedList });
+      return { data: { id: plantID }, success: true };
+    } else {
+      throw { data: 'no-such-user', success: false };
+    }
+  } catch (error) {
+    return error;
+  }
+};
 
 // COLLECTIONS: PLANTS
 
-// create
+// Get Plant Details by ID
+module.exports.getPlantDetails = async function (plantID = null) {
+  try {
+    if (plantID == null) {
+      throw { data: 'empty', success: false };
+    } else {
+      const docRef = doc(db, PLANTS_COL, plantID);
+      const docSnap = await getDoc(docRef);
+      const data = docSnap.data();
+      if (data) return { data: docSnap.data(), success: true };
+      else {
+        throw 'no-plant-found';
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return { data: error, success: false };
+  }
+};
+// create a new plant by ownerID
 module.exports.createNewPlant = async function (
-  userID = null,
-  lat = 51.5074,
-  lng = 0.1278,
+  ownerID,
+  lat,
+  lng,
+  imageLink,
   plantName = 'Plant'
 ) {
   try {
-    // If userID is not mentioned
-    if (lat > 90 || lng > 180 || lat < -90 || lng < -180) {
-      throw { data: 'invalid-coordinates' };
-    }
-    if (userID == null || lat == null || lng == null) {
-      throw { data: 'data-not-provided' };
-    } else {
-      // compute date
-      const date = calculateDateRightNow();
-      // creating a new geopoint to set it to latitudes, and longitudes
-      // Compute the GeoHash for a lat/lng point
-      const hash = geohashForLocation([lat, lng]);
+    // compute date
+    const date = calculateDateRightNow();
+    // creating a new geopoint to set it to latitudes, and longitudes
+    // Compute the GeoHash for a lat/lng point
+    const hash = geohashForLocation([Number(lat), Number(lng)]);
 
-      // Adding the hash and the lat/lng to the document to use the hash
-      // for queries and the lat/lng for distance comparisons.
-      const docData = {
-        curentStatus: 'good',
-        isDiseased: false,
-        ownerID: userID,
-        name: plantName,
-        accountCreationDate: date,
-        lastUpdated: Timestamp.fromDate(new Date(`${month} ${day}, ${year}`)),
-        geohash: hash,
-        lat: lat,
-        lng: lng,
-      };
-      const res = await db.collection(PLANTS_COL).add(docData);
-      return { res, success: true };
-    }
+    // Adding the hash and the lat/lng to the document to use the hash
+    // for queries and the lat/lng for distance comparisons.
+    const docData = {
+      curentStatus: 'good',
+      isDiseased: false,
+      ownerID: ownerID,
+      name: plantName,
+      accountCreationDate: date,
+      image: imageLink,
+      lastUpdated: date,
+      geohash: hash,
+      latitude: Number(lat),
+      longitude: Number(lng),
+    };
+    const res = await addDoc(collection(db, PLANTS_COL), docData);
+    return { data: { id: res.id }, success: true };
   } catch (error) {
-    return { data: error, success: false };
+    return { data: 'error', success: false };
   }
+};
+
+// ---------
+// Get Nearby Plants:
+module.exports.getNearbyPlants = async (lat, lng, dist = 1) => {
+  // Find cities within dist km of [lat, lng]
+  const center = [Number(lat), Number(lng)];
+  const radiusInM = dist * 1000;
+
+  // Each item in 'bounds' represents a startAt/endAt pair. We have to issue
+  // a separate query for each pair. There can be up to 9 pairs of bounds
+  // depending on overlap, but in most cases there are 4.
+  const bounds = geohashQueryBounds(center, radiusInM);
+
+  const promises = [];
+  for (const b of bounds) {
+    const q = query(
+      collection(db, PLANTS_COL),
+      orderBy('geohash'),
+      startAt(b[0]),
+      endAt(b[1])
+    );
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach((doc) => {
+      // doc.data() is never undefined for query doc snapshots
+      promises.push(doc.data());
+    });
+  }
+
+  var finalResult = [];
+
+  // Collect all the query results together into a single list
+  await Promise.all(promises)
+    .then((snapshots) => {
+      const matchingDocs = [];
+
+      for (const snap of snapshots) {
+        // We have to filter out a few false positives due to GeoHash
+        // accuracy, but most will match
+        const lat = Number(snap.latitude);
+        const lng = Number(snap.longitude);
+        const distanceInKm = distanceBetween([lat, lng], center);
+        const distanceInM = distanceInKm * 1000;
+        if (distanceInM <= radiusInM) {
+          matchingDocs.push(snap);
+        }
+      }
+      return matchingDocs;
+    })
+    .then((matchingDocs) => {
+      // --operations
+      finalResult = matchingDocs;
+      // return matchingDocs;
+    });
+  return finalResult;
 };
