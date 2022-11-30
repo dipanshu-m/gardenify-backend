@@ -110,7 +110,6 @@ module.exports.getPlant = async function (userID = null) {
     } else {
       const docRef = doc(db, USERS_COL, userID);
       const docSnap = await getDoc(docRef);
-      console.log(docSnap.data());
     }
   } catch (error) {
     console.log(error);
@@ -172,15 +171,14 @@ module.exports.createNewUser = async function (
 };
 
 // update plants field
-module.exports.updatePlant = async function (userID, plantID) {
+module.exports.updatePlantArrayOfUser = async function (userID, plantID) {
   try {
     const docRef = doc(db, USERS_COL, userID);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       var updatedList = [...docSnap.data().plants, plantID];
-      console.log(updatedList);
       await updateDoc(docRef, { plants: updatedList });
-      return { data: { id: plantID }, success: true };
+      return { data: plantID, success: true };
     } else {
       throw { data: 'no-such-user', success: false };
     }
@@ -205,6 +203,60 @@ module.exports.increasePoints = async function (userID, point) {
   } catch (error) {
     return error;
   }
+};
+// Get Nearby Users:
+module.exports.getNearbyUsers = async (lat, lng, dist = 1) => {
+  // Find cities within dist km of [lat, lng]
+  const center = [Number(lat), Number(lng)];
+  const radiusInM = dist * 1000;
+
+  // Each item in 'bounds' represents a startAt/endAt pair. We have to issue
+  // a separate query for each pair. There can be up to 9 pairs of bounds
+  // depending on overlap, but in most cases there are 4.
+  const bounds = geohashQueryBounds(center, radiusInM);
+
+  const promises = [];
+  for (const b of bounds) {
+    const q = query(
+      collection(db, USERS_COL),
+      orderBy('geohash'),
+      startAt(b[0]),
+      endAt(b[1])
+    );
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach((doc) => {
+      // doc.data() is never undefined for query doc snapshots
+      promises.push(doc.data());
+    });
+  }
+
+  var finalResult = [];
+
+  // Collect all the query results together into a single list
+  await Promise.all(promises)
+    .then((snapshots) => {
+      const matchingDocs = [];
+
+      for (const snap of snapshots) {
+        // We have to filter out a few false positives due to GeoHash
+        // accuracy, but most will match
+        const lat = Number(snap.latitude);
+        const lng = Number(snap.longitude);
+        const distanceInKm = distanceBetween([lat, lng], center);
+        const distanceInM = distanceInKm * 1000;
+        if (distanceInM <= radiusInM) {
+          matchingDocs.push(snap);
+        }
+      }
+      return matchingDocs;
+    })
+    .then((matchingDocs) => {
+      // --operations
+      finalResult = matchingDocs;
+      // return matchingDocs;
+    });
+  console.log(finalResult);
+  return finalResult;
 };
 
 // COLLECTIONS: PLANTS
@@ -256,8 +308,14 @@ module.exports.createNewPlant = async function (
       geohash: hash,
       latitude: Number(lat),
       longitude: Number(lng),
+      statusHistory: [0],
+      statusHistoryDate: [date],
     };
     const res = await addDoc(collection(db, PLANTS_COL), docData);
+    await setDoc(doc(db, PLANTS_COL, res.id), {
+      ...(await getDoc(doc(db, PLANTS_COL, res.id))).data(),
+      plantID: res.id,
+    });
     return { data: { id: res.id }, success: true };
   } catch (error) {
     return { data: 'error', success: false };
@@ -272,7 +330,17 @@ module.exports.updatePlantCurrentStatus = async (plantID, status) => {
     status = Number(status);
     const date = calculateDateRightNow();
     if (docSnap.exists()) {
-      await updateDoc(docRef, { curentStatus: status, lastUpdated: date });
+      var updatedStatusHistory = [...docSnap.data().statusHistory, status];
+      var updatedStatusHistoryDate = [
+        ...docSnap.data().statusHistoryDate,
+        date,
+      ];
+      await updateDoc(docRef, {
+        curentStatus: status,
+        lastUpdated: date,
+        statusHistory: updatedStatusHistory,
+        statusHistoryDate: updatedStatusHistoryDate,
+      });
       return { data: { id: plantID }, success: true };
     } else {
       throw { data: 'no-such-plant', success: false };

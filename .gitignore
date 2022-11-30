@@ -3,3 +3,6 @@
 
 # dotenv processes
 *.env
+
+#backups
+*.backup*
