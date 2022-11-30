@@ -312,8 +312,10 @@ module.exports.createNewPlant = async function (
       statusHistoryDate: [date],
     };
     const res = await addDoc(collection(db, PLANTS_COL), docData);
-    await setDoc(doc(db, PLANTS_COL, res.id), {
-      ...(await getDoc(doc(db, PLANTS_COL, res.id))).data(),
+    const docRef = doc(db, PLANTS_COL, res.id);
+    const docSnap = await getDoc(docRef);
+    await setDoc(docRef, {
+      ...docSnap.data(),
       plantID: res.id,
     });
     return { data: { id: res.id }, success: true };
