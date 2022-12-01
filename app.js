@@ -25,6 +25,8 @@ const {
   increasePoints,
   updatePlantArrayOfUser,
   getNearbyUsers,
+  leaderboards,
+  updateUserLocation,
 } = require('./models/firebase');
 
 // dotenv
@@ -141,6 +143,13 @@ io.on('connection', (socket) => {
     const data = await getUserDetails(userID);
     res.json(data);
   });
+
+  // get user leaderboards
+  app.get('/leaderboards', async (req, res) => {
+    const data = await leaderboards();
+    res.json(data);
+  });
+
   // update user points
   app.put('/user/update/points/', async (req, res) => {
     const { userID, increment } = req.body;
@@ -149,6 +158,18 @@ io.on('connection', (socket) => {
       res.json({ data: 'error', success: false });
     else {
       const data = await increasePoints(userID, point);
+      res.json(data);
+    }
+  });
+  // update user geolocation
+  app.put('/user/update/location/', async (req, res) => {
+    const { userID, latitude, longitude } = req.body;
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    if (userID == null || lat == null || lng == null)
+      res.json({ data: 'invalid-data', success: false });
+    else {
+      const data = await updateUserLocation(userID, lat, lng);
       res.json(data);
     }
   });

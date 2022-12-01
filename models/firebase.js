@@ -196,7 +196,7 @@ module.exports.increasePoints = async function (userID, point) {
       const pointNumber = Number(point);
       const updatedPoints = Number(pointNumber + docSnap.data().points);
       await updateDoc(docRef, { points: updatedPoints });
-      return { data: { id: userID }, success: true };
+      return { data: userID, success: true };
     } else {
       throw { data: 'no-such-user', success: false };
     }
@@ -386,6 +386,27 @@ module.exports.updatePlantIDisease = async (plantID, isDiseased) => {
     return error;
   }
 };
+
+module.exports.updateUserLocation = async (userID, lat, lng) => {
+  try {
+    const docRef = doc(db, USERS_COL, userID);
+    const docSnap = await getDoc(docRef);
+    const hash = geohashForLocation([Number(lat), Number(lng)]);
+    if (docSnap.exists()) {
+      await updateDoc(docRef, {
+        latitude: lat,
+        longitude: lng,
+        geohash: hash,
+      });
+      return { data: userID, success: true };
+    } else {
+      throw { data: 'no-such-user', success: false };
+    }
+  } catch (error) {
+    console.log(error);
+    return error;
+  }
+};
 // ---------
 // Get Nearby Plants:
 module.exports.getNearbyPlants = async (lat, lng, dist = 1) => {
@@ -439,4 +460,21 @@ module.exports.getNearbyPlants = async (lat, lng, dist = 1) => {
       // return matchingDocs;
     });
   return finalResult;
+};
+
+module.exports.leaderboards = async () => {
+  const points = [];
+  const q = query(collection(db, USERS_COL), orderBy('points'));
+  const querySnapshot = await getDocs(q);
+  console.log(querySnapshot);
+  querySnapshot.forEach((doc) => {
+    console.log(doc.data());
+    // doc.data() is never undefined for query doc snapshots
+    points.push({ name: doc.data().name, points: doc.data().points });
+  });
+  let ans = points.sort().reverse();
+  if (ans.length > 10) {
+    ans = ans.slice(0, 10);
+  }
+  return ans;
 };
