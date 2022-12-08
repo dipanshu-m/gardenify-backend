@@ -1,0 +1,408 @@
+{
+	"info": {
+		"_postman_id": "9936e0e7-6c66-4a24-a471-a0dc4ebca3d7",
+		"name": "Gardenify",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "19884518"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Sign Up User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "E",
+									"description": "Name",
+									"type": "text"
+								},
+								{
+									"key": "mail",
+									"value": "E@gmail.com",
+									"description": "Email",
+									"type": "text"
+								},
+								{
+									"key": "pass",
+									"value": "qwerty",
+									"description": "Password",
+									"type": "text"
+								},
+								{
+									"key": "latitude",
+									"value": "50.004",
+									"description": "Latitude",
+									"type": "text"
+								},
+								{
+									"key": "longitude",
+									"value": "4",
+									"description": "Longitude",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:4000/signup",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sign In User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "mail",
+									"value": "b@gmail.com",
+									"description": "Emaild",
+									"type": "text"
+								},
+								{
+									"key": "pass",
+									"value": "qwerty",
+									"description": "Password",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:4000/signin",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"signin"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Fetch",
+			"item": [
+				{
+					"name": "Fetch user details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/user/lprkHNbW9GOcPBiFGXiKx81up6i2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"user",
+								"lprkHNbW9GOcPBiFGXiKx81up6i2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch plant details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/plant/B9cMJJV02vwjwVBUMyM6",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"plant",
+								"B9cMJJV02vwjwVBUMyM6"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Nearby plants",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/plants/latitude=5&longitude=5.05",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"plants",
+								"latitude=5&longitude=5.05"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch leaderboards",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/leaderboards",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"leaderboards"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Create",
+			"item": [
+				{
+					"name": "Add Plant",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "ownerID",
+									"value": "D3nP44k6ppVX5oDqp6M32u2506I2",
+									"description": "plant owner's ID",
+									"type": "text"
+								},
+								{
+									"key": "latitude",
+									"value": "50",
+									"type": "text"
+								},
+								{
+									"key": "longitude",
+									"value": "4",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"value": "eeh",
+									"description": "plant's image",
+									"type": "text"
+								},
+								{
+									"key": "name",
+									"value": "Rose",
+									"description": "plant's name",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:4000/plant",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"plant"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Updaters",
+			"item": [
+				{
+					"name": "Update Plant Status",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "plantID",
+									"value": "Uafr61JLRxxmh5ZWQKJz",
+									"type": "text"
+								},
+								{
+									"key": "status",
+									"value": "5",
+									"description": "send a number between 0-5",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:4000/plant/update/status",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"plant",
+								"update",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Plant Image",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "plantID",
+									"value": "zyaUKKevuAmBBHMNIGKa",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"value": "<img uri>",
+									"description": "send image URI",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:4000/plant/update/image",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"plant",
+								"update",
+								"image"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Plant Disease",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "plantID",
+									"value": "zyaUKKevuAmBBHMNIGKa",
+									"type": "text"
+								},
+								{
+									"key": "isDiseased",
+									"value": "true",
+									"description": "send a boolean",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:4000/plant/update/disease",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"plant",
+								"update",
+								"disease"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Points",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "userID",
+									"value": "D3nP44k6ppVX5oDqp6M32u2506I2",
+									"type": "text"
+								},
+								{
+									"key": "increment",
+									"value": "10",
+									"description": "must be a number",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:4000/user/update/points/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"user",
+								"update",
+								"points",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update location",
+					"request": {
+						"method": "PUT",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
