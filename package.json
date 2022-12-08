@@ -2,9 +2,8 @@
   "name": "gardenify-backend",
   "version": "1.0.0",
   "main": "app.js",
-  "author": "",
+  "author": "dipanshu",
   "license": "ISC",
-  "description": "",
   "scripts": {
     "start": "node app.js"
   },
@@ -23,5 +22,14 @@
   "devDependencies": {
     "nodemon": "^2.0.20",
     "webpack-cli": "^5.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dipanshu-m/gardenify-backend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dipanshu-m/gardenify-backend/issues"
+  },
+  "homepage": "https://github.com/dipanshu-m/gardenify-backend#readme",
+  "description": ""
 }

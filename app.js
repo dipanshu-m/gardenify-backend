@@ -11,29 +11,14 @@ const path = require('path');
 const { urlencoded, json } = require('body-parser');
 
 const socketController = require('./controller/socketController');
-const { signUp, signIn } = require('./controller/authController');
-const {
-  createNewUser,
-  getUserDetails,
-  leaderboards,
-  increasePoints,
-  updateUserLocation,
-  updatePlantArrayOfUser,
-} = require('./controller/userController');
-const {
-  getPlantDetails,
-  updatePlantCurrentStatus,
-  updatePlantImage,
-  updatePlantIDisease,
-  getNearbyPlants,
-  createNewPlant,
-} = require('./controller/plantController');
 
 // dotenv
 require('dotenv').config();
 
-// admin ui for socket.io
-// const { instrument } = require('@socket.io/admin-ui');
+// Routes
+const authRoutes = require('./routers/authRoutes');
+const userRoutes = require('./routers/userRoutes');
+const plantRoutes = require('./routers/plantRoutes');
 
 // -----------SERVER------------------
 
@@ -58,6 +43,7 @@ io.on('connection', (socket) => socketController(socket));
 
 // for parsing application/json
 app.use(json());
+
 // // for parsing application/x-www-form-urlencoded
 app.use(urlencoded({ extended: false }));
 
@@ -65,180 +51,10 @@ app.use(urlencoded({ extended: false }));
 app.use(express.static('./views'));
 
 // ----------REQUESTS-----------------
-// signUp
-app.post('/signup', (req, res) => {
-  const { name, mail, pass, latitude, longitude } = req.body;
 
-  const lat = Number(latitude);
-  const lng = Number(longitude);
-  if (
-    lat == null ||
-    lng == null ||
-    lat > 90 ||
-    lng > 180 ||
-    lat < -90 ||
-    lng < -180
-  ) {
-    res.json({ data: 'invalid-coordinates', success: false });
-  } else {
-    let uid;
-    signUp(mail, pass)
-      .then((data) => {
-        if (data.uid) {
-          uid = data.uid;
-        } else {
-          throw data;
-        }
-      })
-      .then(async () => {
-        createNewUser(uid, lat, lng, name)
-          .then((data) => {
-            res.json(data);
-          })
-          .catch((err) => {
-            console.log(err);
-            // TODO: Call firestore db by id and delete it.
-            res.json({ err, success: false });
-          });
-      })
-      .catch((err) => {
-        // console.log('ERROR IN SIGNUP: ', err);
-        res.json({ data: err, success: false });
-      });
-  }
-});
+// Auth
+app.use(authRoutes);
 
-// signIn
-app.post('/signin', (req, res) => {
-  const { mail, pass } = req.body;
-  signIn(mail, pass)
-    .then((data) => {
-      if (data.uid) {
-        res.json({ data: data.uid, success: true });
-      } else {
-        res.json({ data: data, success: false });
-      }
-    })
-    .catch((err) => {
-      console.log('FATAL ERROR: ', err);
-      res.json({ data: err, success: false });
-    });
-});
+app.use('/user', userRoutes);
 
-// USER
-// get user details
-app.get('/user/:id', async (req, res) => {
-  const userID = req.params.id;
-  const data = await getUserDetails(userID);
-  res.json(data);
-});
-
-// get user leaderboards
-app.get('/leaderboards', async (req, res) => {
-  const data = await leaderboards();
-  res.json(data);
-});
-
-// update user points
-app.put('/user/update/points/', async (req, res) => {
-  const { userID, increment } = req.body;
-  const point = Number(increment);
-  if (userID == null || point == null)
-    res.json({ data: 'error', success: false });
-  else {
-    const data = await increasePoints(userID, point);
-    res.json(data);
-  }
-});
-// update user geolocation
-app.put('/user/update/location/', async (req, res) => {
-  const { userID, latitude, longitude } = req.body;
-  const lat = Number(latitude);
-  const lng = Number(longitude);
-  if (userID == null || lat == null || lng == null)
-    res.json({ data: 'invalid-data', success: false });
-  else {
-    const data = await updateUserLocation(userID, lat, lng);
-    res.json(data);
-  }
-});
-
-// PLANT
-// get plant details
-app.get('/plant/:id', async (req, res) => {
-  const plantID = req.params.id;
-  const data = await getPlantDetails(plantID);
-  res.json(data);
-});
-
-// update plant status
-app.put('/plant/update/status/', async (req, res) => {
-  const { plantID, status } = req.body;
-  if (plantID == null || status == null)
-    res.json({ data: 'error', success: false });
-  else {
-    const data = await updatePlantCurrentStatus(plantID, status);
-    res.json(data);
-  }
-});
-// update plant image
-app.put('/plant/update/image/', async (req, res) => {
-  const { plantID, image } = req.body;
-  if (plantID == null || image == null)
-    res.json({ data: 'error', success: false });
-  else {
-    const data = await updatePlantImage(plantID, image);
-    res.json(data);
-  }
-});
-
-// update plant disease
-app.put('/plant/update/disease/', async (req, res) => {
-  const { plantID, isDiseased } = req.body;
-  const disease = Boolean(isDiseased);
-  if (plantID == null || disease == null)
-    res.json({ data: 'error', success: false });
-  else {
-    const data = await updatePlantIDisease(plantID, isDiseased);
-    res.json(data);
-  }
-});
-
-// add a new plant
-app.post('/plant', async (req, res) => {
-  const { ownerID, latitude, longitude, image, name } = req.body;
-
-  const lat = Number(latitude);
-  const lng = Number(longitude);
-  if (
-    lat == null ||
-    lng == null ||
-    lat > 90 ||
-    lng > 180 ||
-    lat < -90 ||
-    lng < -180
-  ) {
-    res.json({ data: 'invalid-coordinates', success: false });
-  } else {
-    createNewPlant(ownerID, lat, lng, image, name)
-      .then(async (data) => {
-        if (data.data.id) {
-          const d = await updatePlantArrayOfUser(ownerID, data.data.id);
-          res.json(d);
-        } else {
-          throw data;
-        }
-      })
-      .catch((err) => {
-        res.json(err);
-      });
-  }
-});
-
-// get plant geolocation vals
-app.get('/plants/latitude=:lat&longitude=:long', async (req, res) => {
-  const lat = Number(req.params.lat);
-  const lng = Number(req.params.long);
-  const data = await getNearbyPlants(lat, lng);
-  res.json(data);
-});
+app.use('/plant', plantRoutes);
