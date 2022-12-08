@@ -506,7 +506,7 @@ require('dotenv').config();
 // -----------SERVER------------------
 
 // Application PORT
-var PORT = process.env.PORT || 3399;
+var PORT = process.env.PORT || 4000;
 
 // server init
 const server = app.listen(PORT, () => {
@@ -520,15 +520,33 @@ const io = require('socket.io')(server, {
   },
 });
 
-// console.log(;
-// const customIO = io.of('/sockets/');
 io.on('connection', (socket) => {
   // socket listeners
 
+  // upon signup/signin, join room to listen to updates on plants
   socket.on('join-room', (id) => {
     socket.join(id);
   });
-  // socket emmiters
+
+  // when a new plant is added
+  socket.on('new-plant', async (lat, lng) => {
+    // fetch nearby users of the plant
+    const nearbyUsers = await getNearbyUsers(lat, lng);
+    // notify nearby users that a new plant has been added.
+    nearbyUsers.map((val) => {
+      socket.to(val.id).emit('new-plant', data.data.id);
+    });
+  });
+
+  // when a plant detail has been updated
+  socket.on('update-plant', async (lat, lng) => {
+    // fetch nearby users of the plant
+    const nearbyUsers = await getNearbyUsers(lat, lng);
+    // notify nearby users that a plant detail has been updated.
+    nearbyUsers.map((val) => {
+      socket.to(val.id).emit('update-plant', data.data.id);
+    });
+  });
 });
 
 // --------MIDDLEWARES----------------
@@ -570,8 +588,6 @@ app.post('/signup', (req, res) => {
       .then(async () => {
         createNewUser(uid, lat, lng, name)
           .then((data) => {
-            // Joins room: UserID  which will listen to updates on plants
-            // socket.join(uid);
             res.json(data);
           })
           .catch((err) => {
@@ -593,8 +609,6 @@ app.post('/signin', (req, res) => {
   signIn(mail, pass)
     .then((data) => {
       if (data.uid) {
-        // Joins room: UserID which will listen to updates on plants
-        // socket.join(data.uid);
         res.json({ data: data.uid, success: true });
       } else {
         res.json({ data: data, success: false });
@@ -704,12 +718,6 @@ app.post('/plant', async (req, res) => {
     createNewPlant(ownerID, lat, lng, image, name)
       .then(async (data) => {
         if (data.data.id) {
-          // get nearby users of the plant
-          const nearbyUsers = await getNearbyUsers(lat, lng);
-          // notify nearby users that a new plant has been added.
-          // nearbyUsers.map((val) => {
-          //   socket.to(val.id).emit('new-plant', data.data.id);
-          // });
           const d = await updatePlantArrayOfUser(ownerID, data.data.id);
           res.json(d);
         } else {
@@ -726,7 +734,6 @@ app.post('/plant', async (req, res) => {
 app.get('/plants/latitude=:lat&longitude=:long', async (req, res) => {
   const lat = Number(req.params.lat);
   const lng = Number(req.params.long);
-  //   const data = await getUserDetails(userID);
   const data = await getNearbyPlants(lat, lng);
   res.json(data);
 });
